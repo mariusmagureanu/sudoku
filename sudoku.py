@@ -3,8 +3,7 @@
 from termcolor import colored
 import timeit
 SIZE = 9
-all_items = []
-
+all_items = {}
 
 Matrix = [[3, 0, 0, 2, 4, 0, 0, 6, 0],
           [0, 4, 0, 0, 0, 0, 0, 5, 3],
@@ -27,6 +26,7 @@ Matrix = [[0, 2, 0, 0, 0, 0, 0, 0, 0],
           [0, 0, 0, 0, 0, 0, 0, 4, 0]]
 '''
 
+
 class M:
     def __init__(self, value, x, y):
         self.val = value
@@ -47,36 +47,28 @@ class Box:
 
     all = set(range(1, 10))
 
-    def __init__(self, index, xs, ys):
+    def __init__(self, index):
         self.index = index
-        self.items = []
-        self.xs = xs
-        self.ys = ys
+        self.items = {}
 
     def add(self, item):
-        self.items.append(item)
+        self.items[(item.x, item.y)] = item
 
     def fill(self, zero, val):
-        for i in self.items:
-            if i.x==zero.x and i.y == zero.y :
-                i.val = val
-                break
-        for i in all_items:
-            if i.x==zero.x and i.y == zero.y :
-                i.val = val
-                break
- 
+        t_z = zero
+        t_z.val = val
+        self.items[(zero.x, zero.y)] = t_z
+        all_items[(zero.x, zero.y)] = t_z
 
     def do_stuff(self):
         global all_items
-        existing = set(x.val for x in self.items if x.val != 0)
-        missing =  self.all - existing
+        existing = set(x.val for x in self.items.values() if x.val != 0)
+        missing = self.all - existing
         sols = {}
-        zeros = [x for x in self.items if x.val == 0]
+        zeros = [x for x in self.items.values() if x.val == 0]
 
         for im in missing:
-            checks = [x for x in all_items if x.val == im]
-
+            checks = [x for x in all_items.values() if x.val == im]
             for z in zeros:
                 confirmed = 0
                 for c in checks:
@@ -84,87 +76,58 @@ class Box:
                         break
                     if c.y == z.y:
                         break
-                    confirmed = confirmed +1
+
+                    confirmed = confirmed + 1
                     if confirmed == len(checks):
-                        #print(c.val, "[",z.x,",", z.y,"]")
                         if c.val not in sols:
                             sols[c.val] = [z]
                         else:
                             sols[c.val].append(z)
 
-        solve = []
+        done = len(sols)
 
-        for k,v in sols.items():
+        for k, v in sols.items():
             if len(v) == 1:
-                self.fill(v[0],k)
-            else:
-                solve.append(k)
+                self.fill(v[0], k)
+                done = done - 1
 
-        return len(solve) == 0
+        return done == 0
 
 
 if __name__ == "__main__":
-    idxx = 0
-    xs = []
-    ys = []
 
     boxes = {}
 
-    for x in range(SIZE):
-        for y in range(SIZE):
-            if x in [0, 1, 2] and y in [0, 1, 2]:
-                idx = 1
-                xs = [0, 1, 2]
-                ys = [0, 1, 2]
-            elif x in [3, 4, 5] and y in [0, 1, 2]:
-                idx = 2
-                xs = [3, 4, 5]
-                ys = [0, 1, 2]
-            elif x in [6, 7, 8] and y in [0, 1, 2]:
-                idx = 3
-                xs = [6, 7, 8]
-                ys = [0, 1, 2]
-            elif x in [0, 1, 2] and y in [3, 4, 5]:
-                idx = 4
-                xs = [0, 1, 2]
-                ys = [3, 4, 5]
-            elif x in [3, 4, 5] and y in [3, 4, 5]:
-                idx = 5
-                xs = [3, 4, 5]
-                ys = [3, 4, 5]
-            elif x in [6, 7, 8] and y in [3, 4, 5]:
-                idx = 6
-                xs = [6, 7, 8]
-                ys = [3, 4, 5]
-            elif x in [0, 1, 2] and y in [6, 7, 8]:
-                idx = 7
-                xs = [0, 1, 2]
-                ys = [6, 7, 8]
-            elif x in [3, 4, 5] and y in [6, 7, 8]:
-                idx = 8
-                xs = [3, 4, 5]
-                ys = [6, 7, 8]
-            elif x in [6, 7, 8] and y in [6, 7, 8]:
-                idx = 9
-                xs = [6, 7, 8]
-                ys = [6, 7, 8]
+    yc = 0
+    xc = 1
 
+    for j, a in enumerate(Matrix):
+        xc = 1
+
+        for i, mv in enumerate(a):
+            idx = xc + 3 * yc
             if idx not in boxes:
-                boxes[idx] = Box(idx, xs, ys)
+                boxes[idx] = Box(idx)
 
-            m = M(Matrix[x][y], x, y)
+            m = M(mv, i, j)
             m.box = idx
-            all_items.append(m)
+
+            all_items[(i, j)] = m
             boxes[idx].add(m)
+
+            if (i + 1) % 3 == 0:
+                xc = xc + 1
+
+        if (j + 1) % 3 == 0:
+            yc = yc + 1
 
     def my_func():
         while True:
             count = 0
             for box in boxes.values():
                 done = box.do_stuff()
-
                 if done:
-                    count = count+1
+                    count = count + 1
             if count == len(boxes):
                 break
 
@@ -173,7 +136,7 @@ if __name__ == "__main__":
     print(25 * "=", end='')
     print()
 
-    for m in all_items:
+    for m in all_items.values():
         print(m.to_color(), " ", end='')
-        if m.y == 8:
+        if m.x == 8:
             print()
