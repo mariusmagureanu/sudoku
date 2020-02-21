@@ -2,8 +2,9 @@
 
 from termcolor import colored
 import timeit
-SIZE = 9
+
 all_items = {}
+all = set(range(1, 10))
 
 Matrix = [[3, 0, 0, 2, 4, 0, 0, 6, 0],
           [0, 4, 0, 0, 0, 0, 0, 5, 3],
@@ -45,8 +46,6 @@ class M:
 
 class Box:
 
-    all = set(range(1, 10))
-
     def __init__(self, index):
         self.index = index
         self.items = {}
@@ -60,10 +59,10 @@ class Box:
         self.items[(zero.x, zero.y)] = t_z
         all_items[(zero.x, zero.y)] = t_z
 
-    def do_stuff(self):
+    def solve(self):
         global all_items
         existing = set(x.val for x in self.items.values() if x.val != 0)
-        missing = self.all - existing
+        missing = all - existing
         sols = {}
         zeros = [x for x in self.items.values() if x.val == 0]
 
@@ -94,17 +93,16 @@ class Box:
         return done == 0
 
 
-if __name__ == "__main__":
-
+def get_boxes(grid):
     boxes = {}
 
     yc = 0
     xc = 1
 
-    for j, a in enumerate(Matrix):
+    for j, arr in enumerate(grid):
         xc = 1
 
-        for i, mv in enumerate(a):
+        for i, mv in enumerate(arr):
             idx = xc + 3 * yc
             if idx not in boxes:
                 boxes[idx] = Box(idx)
@@ -121,18 +119,21 @@ if __name__ == "__main__":
         if (j + 1) % 3 == 0:
             yc = yc + 1
 
-    def my_func():
-        while True:
-            count = 0
-            for box in boxes.values():
-                done = box.do_stuff()
-                if done:
-                    count = count + 1
-            if count == len(boxes):
-                break
+    return boxes
 
-    print(timeit.timeit(my_func, number=1))
 
+def solve_grid(boxes):
+    while True:
+        count = 0
+        for box in boxes.values():
+            done = box.solve()
+            if done:
+                count = count + 1
+        if count == len(boxes):
+            break
+
+
+def print_grid_items():
     print(25 * "=", end='')
     print()
 
@@ -140,3 +141,14 @@ if __name__ == "__main__":
         print(m.to_color(), " ", end='')
         if m.x == 8:
             print()
+
+
+if __name__ == "__main__":
+    boxes = get_boxes(Matrix)
+
+    print(
+        timeit.timeit(
+            'solve_grid(boxes)',
+            setup="from __main__ import solve_grid, boxes",
+            number=1))
+    print_grid_items()
